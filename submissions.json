@@ -1,0 +1,45 @@
+[
+  {
+    "japanese": "私は猫が好きです。",
+    "user_input": "I like cats.",
+    "score": 1.0
+  },
+  {
+    "japanese": "彼女は本を読んでいます。",
+    "user_input": "I like cats.",
+    "score": 0.052627310156822205
+  },
+  {
+    "japanese": "彼女は本を読んでいます。",
+    "user_input": "She is reading a book.",
+    "score": 0.9999998807907104
+  },
+  {
+    "japanese": "彼は毎朝ジョギングをします。",
+    "user_input": "He goes jogging every day.",
+    "score": 0.8520221710205078
+  },
+  {
+    "japanese": "明日は雨が降るでしょう。",
+    "user_input": "It will probably rain tomorrow.",
+    "score": 1.0000001192092896
+  },
+  {
+    "timestamp": "2025-08-09T05:07:09.574107Z",
+    "japanese": "この映画は面白かったです。",
+    "student_translation": "This movie was very interesting.",
+    "similarity_score": 0.963415801525116
+  },
+  {
+    "timestamp": "2025-08-09T05:08:10.458744Z",
+    "japanese": "私は猫が好きです。",
+    "student_translation": "I like cats.",
+    "similarity_score": 1.0
+  },
+  {
+    "timestamp": "2025-08-09T05:11:13.473421Z",
+    "japanese": "私たちは公園に行きました。",
+    "student_translation": "We went to the park.",
+    "similarity_score": 1.0
+  }
+]

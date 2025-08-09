@@ -1,0 +1,105 @@
+[
+  {
+    "japanese": "私は猫が好きです。",
+    "english": "I like cats."
+  },
+  {
+    "japanese": "彼女は本を読んでいます。",
+    "english": "She is reading a book.",
+    "alternatives": ["She's reading a book."]
+  },
+  {
+    "japanese": "私たちは公園に行きました。",
+    "english": "We went to the park."
+  },
+  {
+    "japanese": "私は学生です。",
+    "english": "I am a student.",
+    "alternatives": ["I'm a student."]
+  },
+  {
+    "japanese": "今日はとても暑いです。",
+    "english": "It is very hot today."
+  },
+  {
+    "japanese": "彼は毎朝ジョギングをします。",
+    "english": "He jogs every morning."
+  },
+  {
+    "japanese": "明日は雨が降るでしょう。",
+    "english": "It will probably rain tomorrow."
+  },
+  {
+    "japanese": "この映画は面白かったです。",
+    "english": "This movie was interesting."
+  },
+  {
+    "japanese": "私は英語を勉強しています。",
+    "english": "I am studying English."
+  },
+  {
+    "japanese": "昨日は友達と会いました。",
+    "english": "I met my friends yesterday."
+  },
+  {
+    "japanese": "彼女はピアノが上手です。",
+    "english": "She is good at playing the piano."
+  },
+  {
+    "japanese": "猫がソファの上で寝ています。",
+    "english": "The cat is sleeping on the sofa."
+  },
+  {
+    "japanese": "電車は何時に来ますか？",
+    "english": "What time does the train arrive?",
+    "alternatives": ["When does the train come?"]
+  },
+  {
+    "japanese": "明日は学校を休みます。",
+    "english": "I will take a day off from school tomorrow."
+  },
+  {
+    "japanese": "彼は新しい車を買いました。",
+    "english": "He bought a new car."
+  },
+  {
+    "japanese": "旅行が大好きです。",
+    "english": "I love traveling."
+  },
+  {
+    "japanese": "朝ご飯を食べましたか？",
+    "english": "Did you eat breakfast?"
+  },
+  {
+    "japanese": "このケーキは美味しいです。",
+    "english": "This cake is delicious."
+  },
+  {
+    "japanese": "仕事は忙しいですが楽しいです。",
+    "english": "Work is busy but enjoyable."
+  },
+  {
+    "japanese": "図書館で勉強しましょう。",
+    "english": "Let's study at the library."
+  },
+  {
+    "japanese": "電気を消してください。",
+    "english": "Please turn off the light."
+  },
+  {
+    "japanese": "毎日ジョギングしていますか？",
+    "english": "Do you jog every day?"
+  },
+  {
+    "japanese": "今日は何曜日ですか？",
+    "english": "What day is it today?"
+  },
+  {
+    "japanese": "彼女は歌が上手です。",
+    "english": "She sings well."
+  },
+  {
+    "japanese": "来週は旅行に行きます。",
+    "english": "I will go on a trip next week."
+  }
+]
