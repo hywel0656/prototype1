@@ -9,14 +9,23 @@ import difflib
 
 # --- Settings ---
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-CREDS_FILE = "credentials.json"  # Your service account key JSON file
 SPREADSHEET_ID = "1_fy_83CUtcfT7iXSSC2aPNS7sJOWONyTPs0h9aFUzmc"
 THRESHOLD = 0.80  # Passing score
 
 # --- Google Sheets setup ---
 @st.cache_resource
 def get_gsheet():
-    creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
+    if "credentials.json" in os.listdir():
+        # Local mode: load creds from file
+        creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
+    elif st.secrets.get("gcp_service_account"):
+        # Deployed mode: load creds from Streamlit secrets
+        creds_info = st.secrets["gcp_service_account"]
+        creds = Credentials.from_service_account_info(json.loads(creds_info), scopes=SCOPES)
+    else:
+        st.warning("Google credentials not configured.")
+        return None  # Graceful fallback
+
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
     return sheet
@@ -125,20 +134,23 @@ if st.button("✅ Submit this translation"):
             best_score = st.session_state.last_score
             best_variant = st.session_state.last_variant
 
-        try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sheet.append_row([
-                timestamp,
-                selected_japanese,
-                user_input,
-                f"{best_score:.4f}",
-                "Pass" if best_score >= THRESHOLD else "Fail"
-            ])
-            if best_score >= THRESHOLD:
-                st.success(f"✅ Submitted! Score: {best_score:.2f} (Pass)")
-            else:
-                st.warning(f"✅ Submitted! Score: {best_score:.2f} (Below threshold)")
-            st.session_state.last_score = None
-            st.session_state.last_variant = None
-        except Exception as e:
-            st.error(f"Failed to save your submission: {e}")
+        if sheet is None:
+            st.error("Google Sheet not available. Submission failed.")
+        else:
+            try:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                sheet.append_row([
+                    timestamp,
+                    selected_japanese,
+                    user_input,
+                    f"{best_score:.4f}",
+                    "Pass" if best_score >= THRESHOLD else "Fail"
+                ])
+                if best_score >= THRESHOLD:
+                    st.success(f"✅ Submitted! Score: {best_score:.2f} (Pass)")
+                else:
+                    st.warning(f"✅ Submitted! Score: {best_score:.2f} (Below threshold)")
+                st.session_state.last_score = None
+                st.session_state.last_variant = None
+            except Exception as e:
+                st.error(f"Failed to save your submission: {e}")

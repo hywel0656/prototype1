@@ -5,3 +5,5 @@ venv/
 .env/
 .git/
 
+credentials.json
+bfg.jar
