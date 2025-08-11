@@ -1,17 +1,36 @@
 import streamlit as st
 import json
 import os
-from datetime import datetime
 from sentence_transformers import SentenceTransformer, util
+import gspread
+from google.oauth2.service_account import Credentials
+from datetime import datetime
+import difflib
 
-# Load sentence transformer model
+# --- Settings ---
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+CREDS_FILE = "credentials.json"  # Your service account key JSON file
+SPREADSHEET_ID = "1_fy_83CUtcfT7iXSSC2aPNS7sJOWONyTPs0h9aFUzmc"
+THRESHOLD = 0.80  # Passing score
+
+# --- Google Sheets setup ---
+@st.cache_resource
+def get_gsheet():
+    creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(SPREADSHEET_ID).sheet1
+    return sheet
+
+sheet = get_gsheet()
+
+# --- Load sentence transformer model ---
 @st.cache_resource
 def load_model():
     return SentenceTransformer("paraphrase-MiniLM-L3-v2")
 
 model = load_model()
 
-# Load translations
+# --- Load translations ---
 def load_translations(file_path="data/translations.json"):
     if not os.path.exists(file_path):
         st.error("Translation file not found.")
@@ -20,26 +39,30 @@ def load_translations(file_path="data/translations.json"):
         return json.load(f)
 
 translations = load_translations()
-
-# Build a dict for fast lookup
 japanese_to_entry = {entry["japanese"]: entry for entry in translations}
 
-# Load or initialize submissions
-SUBMISSION_FILE = "submissions.json"
-if os.path.exists(SUBMISSION_FILE):
-    with open(SUBMISSION_FILE, "r", encoding="utf-8") as f:
-        try:
-            submissions = json.load(f)
-        except json.JSONDecodeError:
-            submissions = []
-else:
-    submissions = []
+# --- Helper functions ---
+def compute_score_and_best(user_text, variants):
+    embeddings = model.encode([user_text] + variants, convert_to_tensor=True)
+    scores = util.pytorch_cos_sim(embeddings[0], embeddings[1:])
+    best_idx = scores.argmax().item()
+    best_score = scores.max().item()
+    return best_score, variants[best_idx]
 
-# Save submissions helper
-def save_submissions():
-    with open(SUBMISSION_FILE, "w", encoding="utf-8") as f:
-        json.dump(submissions, f, indent=2, ensure_ascii=False)
+def highlight_diff(user_text, best_variant):
+    """Highlight differences using difflib."""
+    diff = difflib.ndiff(user_text.split(), best_variant.split())
+    highlighted = []
+    for token in diff:
+        if token.startswith("+ "):  # in best_variant but not in user_text
+            highlighted.append(f"<span style='background-color:#b3ffb3'> {token[2:]} </span>")
+        elif token.startswith("- "):  # in user_text but not in best_variant
+            highlighted.append(f"<span style='background-color:#ffcccc'> {token[2:]} </span>")
+        elif token.startswith("  "):
+            highlighted.append(token[2:])
+    return " ".join(highlighted)
 
+# --- Streamlit UI ---
 st.title("🧠 Japanese to English Translation Helper")
 
 if not japanese_to_entry:
@@ -49,52 +72,73 @@ if not japanese_to_entry:
 selected_japanese = st.selectbox("Select a Japanese sentence:", list(japanese_to_entry.keys()))
 entry = japanese_to_entry[selected_japanese]
 
-st.markdown("### 📘 Japanese Sentence")
-st.write(selected_japanese)
+show_translation = st.checkbox("Show correct English translation")
 
-# Optional: show correct English translation or hide it if you want
-if st.checkbox("Show correct English translation"):
-    st.markdown("### ✔️ Correct Translation")
+if show_translation:
+    st.markdown("### 📘 Translation")
     st.write(entry["english"])
     if "alternatives" in entry:
         st.markdown("### 🔄 Alternatives")
         for alt in entry["alternatives"]:
             st.write(alt)
 
-st.markdown("### ✍️ Try your English translation")
+st.markdown("### ✍️ Enter your English translation")
+user_input = st.text_input("Your answer:")
 
-user_input = st.text_input("Type your translation here:")
+# Keep last score in session
+if "last_score" not in st.session_state:
+    st.session_state.last_score = None
+if "last_variant" not in st.session_state:
+    st.session_state.last_variant = None
 
-if user_input:
-    # Calculate similarity live (optional)
-    all_variants = [entry["english"]] + entry.get("alternatives", [])
-    embeddings = model.encode([user_input] + all_variants, convert_to_tensor=True)
-    scores = util.pytorch_cos_sim(embeddings[0], embeddings[1:])
-    best_score = scores.max().item()
-    st.write(f"Similarity score (live): {best_score:.2f}")
-
-    if best_score > 0.8:
-        st.success("✅ Pretty close!")
-    elif best_score > 0.6:
-        st.info("🧐 Somewhat similar.")
+# Try Translation
+if st.button("🔍 Try Translation"):
+    if user_input.strip() == "":
+        st.warning("Please enter a translation before trying.")
     else:
-        st.warning("❌ Quite different. Keep trying!")
+        all_variants = [entry["english"]] + entry.get("alternatives", [])
+        best_score, best_variant = compute_score_and_best(user_input, all_variants)
+        st.session_state.last_score = best_score
+        st.session_state.last_variant = best_variant
 
-    # Submit button
-    if st.button("Submit this translation"):
-        submission = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "japanese": selected_japanese,
-            "student_translation": user_input,
-            "similarity_score": best_score,
-        }
-        submissions.append(submission)
-        save_submissions()
-        st.success("🎉 Your translation has been submitted!")
+        if best_score >= THRESHOLD:
+            st.success(f"✅ Good enough! Score: {best_score:.2f}")
+        else:
+            st.warning(f"⚠️ Not quite there yet. Score: {best_score:.2f} (Try to improve)")
 
-        # Clear the input box after submission
-        st.rerun()
+        # Show differences
+        diff_html = highlight_diff(user_input, best_variant)
+        st.markdown("**Closest matching correct version:**")
+        st.write(best_variant)
+        st.markdown("**Differences (green = missing words, red = extra words):**", unsafe_allow_html=True)
+        st.markdown(diff_html, unsafe_allow_html=True)
 
-else:
-    st.info("Type a translation above to see similarity scores and submit.")
+# Submit Translation
+if st.button("✅ Submit this translation"):
+    if user_input.strip() == "":
+        st.warning("Please enter a translation before submitting.")
+    else:
+        if st.session_state.last_score is None:
+            all_variants = [entry["english"]] + entry.get("alternatives", [])
+            best_score, best_variant = compute_score_and_best(user_input, all_variants)
+        else:
+            best_score = st.session_state.last_score
+            best_variant = st.session_state.last_variant
 
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sheet.append_row([
+                timestamp,
+                selected_japanese,
+                user_input,
+                f"{best_score:.4f}",
+                "Pass" if best_score >= THRESHOLD else "Fail"
+            ])
+            if best_score >= THRESHOLD:
+                st.success(f"✅ Submitted! Score: {best_score:.2f} (Pass)")
+            else:
+                st.warning(f"✅ Submitted! Score: {best_score:.2f} (Below threshold)")
+            st.session_state.last_score = None
+            st.session_state.last_variant = None
+        except Exception as e:
+            st.error(f"Failed to save your submission: {e}")
