@@ -20,8 +20,7 @@ def get_gsheet():
         creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
     elif st.secrets.get("gcp_service_account"):
         # Deployed mode: load creds from Streamlit secrets
-        creds_info = st.secrets["gcp_service_account"]
-        creds = Credentials.from_service_account_info(json.loads(creds_info), scopes=SCOPES)
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=SCOPES)
     else:
         st.warning("Google credentials not configured.")
         return None  # Graceful fallback
